@@ -136,6 +136,25 @@ fw-shipped-$(CONFIG_USB_VICAM) += vicam/firmware.fw
 fw-shipped-$(CONFIG_VIDEO_CPIA2) += cpia2/stv0672_vp4.bin
 fw-shipped-$(CONFIG_YAM) += yam/1200.bin yam/9600.bin
 
+fw-shipped-$(CONFIG_EXYNOS_MBOX) += apm_0116_fw_v0.h
+
+# Touchscreen
+fw-shipped-$(CONFIG_TOUCHSCREEN_FTS) += \
+	tsp_stm/stm_tb_integ.fw \
+	tsp_stm/stm_z2a.fw \
+	tsp_stm/stm_z2i.fw \
+	tsp_stm/stm_z1.fw \
+	tsp_stm/stm_za.fw
+
+# Touchkeys
+fw-shipped-$(CONFIG_KEYBOARD_CYPRESS_TOUCH_MBR31X5) += \
+	cypress/cypress_zerof.fw \
+	cypress/cypress_vlte.fw \
+	cypress/cypress_noble.fw
+
+# Sensorhub
+fw-shipped-$(CONFIG_SENSORS_SSP) += ssp_stm.fw ssp_stm_m.fw ssp_crashed.fw
+
 fw-shipped-all := $(fw-shipped-y) $(fw-shipped-m) $(fw-shipped-)
 
 quiet_cmd_ihex  = IHEX    $@
@@ -158,7 +177,7 @@ quiet_cmd_fwbin = MK_FW   $@
 		  echo "    .section .rodata"				>>$@;\
 		  echo "    .p2align $${ASM_ALIGN}"			>>$@;\
 		  echo "_fw_$${FWSTR}_bin:"				>>$@;\
-		  echo "    .incbin \"$(2)\""				>>$@;\
+		  echo "    .incbin \"$(srctree)/$(2)\""				>>$@;\
 		  echo "_fw_end:"					>>$@;\
 		  echo "   .section .rodata.str,\"aMS\",$${PROGBITS},1"	>>$@;\
 		  echo "    .p2align $${ASM_ALIGN}"			>>$@;\
