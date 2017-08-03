@@ -216,6 +216,7 @@ struct thermal_zone_device {
 	int last_temperature;
 	int emul_temperature;
 	int passive;
+	bool cooling_dev_en;
 	int prev_low_trip;
 	int prev_high_trip;
 	unsigned int forced_passive;

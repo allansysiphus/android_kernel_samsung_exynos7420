@@ -203,5 +203,13 @@ extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
 	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
 	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
 
+/*
+ * Architecture ioremap implementation.
+ */
+#define MT_DEVICE		0
+#define MT_DEVICE_NONSHARED	1
+#define MT_DEVICE_CACHED	2
+#define MT_DEVICE_WC		3
+
 #endif	/* __KERNEL__ */
 #endif	/* __ASM_IO_H */

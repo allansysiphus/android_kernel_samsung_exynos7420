@@ -47,6 +47,7 @@
 #include <linux/clk.h>
 #include <linux/cpufreq.h>
 #include <linux/of.h>
+#include <linux/list.h>
 
 #include <asm/irq.h>
 
@@ -73,6 +74,8 @@ static void dbg(const char *fmt, ...)
 #else
 #define dbg(fmt, ...) do { if (0) no_printk(fmt, ##__VA_ARGS__); } while (0)
 #endif
+
+static LIST_HEAD(drvdata_list);
 
 /* UART name and device definitions */
 
@@ -1798,6 +1801,39 @@ static inline struct s3c24xx_serial_drv_data *s3c24xx_get_driver_data(
 			platform_get_device_id(pdev)->driver_data;
 }
 
+static int s3c24xx_serial_tx_fifocnt(struct s3c24xx_uart_port *ourport,
+				     unsigned long ufstat)
+{
+	struct s3c24xx_uart_info *info = ourport->info;
+
+	if (ufstat & info->tx_fifofull)
+		return ourport->port.fifosize;
+
+	return (ufstat & info->tx_fifomask) >> info->tx_fifoshift;
+}
+
+void s3c24xx_serial_fifo_wait(void)
+{
+	struct s3c24xx_uart_port *ourport;
+	struct uart_port *port;
+	unsigned int fifo_stat;
+	unsigned long wait_time;
+
+	list_for_each_entry(ourport, &drvdata_list, node) {
+		if (ourport->port.line != CONFIG_S3C_LOWLEVEL_UART_PORT)
+			continue;
+
+		wait_time = jiffies + HZ / 4;
+		do {
+			port = &ourport->port;
+			fifo_stat = rd_regl(port, S3C2410_UFSTAT);
+			cpu_relax();
+		} while (s3c24xx_serial_tx_fifocnt(ourport, fifo_stat)
+				&& time_before(jiffies, wait_time));
+	}
+}
+EXPORT_SYMBOL_GPL(s3c24xx_serial_fifo_wait);
+
 static int s3c24xx_serial_probe(struct platform_device *pdev)
 {
 	struct device_node *np = pdev->dev.of_node;
@@ -1873,6 +1909,8 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "failed to add cpufreq notifier\n");
 
 	probe_index++;
+
+	list_add_tail(&ourport->node, &drvdata_list);
 
 	return 0;
 }

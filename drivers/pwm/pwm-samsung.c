@@ -105,6 +105,13 @@ struct samsung_pwm_chip {
 static DEFINE_SPINLOCK(samsung_pwm_lock);
 #endif
 
+static int pwm_enable_cnt = 0;
+int pwm_check_enable_cnt(void)
+{
+	return pwm_enable_cnt;
+}
+EXPORT_SYMBOL_GPL(pwm_check_enable_cnt);
+
 static inline
 struct samsung_pwm_chip *to_samsung_pwm_chip(struct pwm_chip *chip)
 {
@@ -257,6 +264,7 @@ static int pwm_samsung_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 	tcon |= TCON_START(tcon_chan) | TCON_AUTORELOAD(tcon_chan);
 	writel(tcon, our_chip->base + REG_TCON);
 
+	pwm_enable_cnt++;
 	spin_unlock_irqrestore(&samsung_pwm_lock, flags);
 
 	return 0;
@@ -275,6 +283,7 @@ static void pwm_samsung_disable(struct pwm_chip *chip, struct pwm_device *pwm)
 	tcon &= ~TCON_AUTORELOAD(tcon_chan);
 	writel(tcon, our_chip->base + REG_TCON);
 
+	pwm_enable_cnt--;
 	spin_unlock_irqrestore(&samsung_pwm_lock, flags);
 }
 

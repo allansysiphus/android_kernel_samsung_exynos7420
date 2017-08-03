@@ -26,6 +26,16 @@ config ARM_VEXPRESS_SPC_CPUFREQ
           This add the CPUfreq driver support for Versatile Express
 	  big.LITTLE platforms using SPC for power management.
 
+config ARM_EXYNOS_MP_CPUFREQ
+	bool "SAMSUNG EXYNOS SoCs for MP"
+	depends on ARCH_EXYNOS
+#	depends on SCHED_HMP
+	help
+	  This adds the MP CPUFreq driver common part for Samsung
+	  EXYNOS SoCs.
+
+	  If in doubt, say N.
+
 config ARM_EXYNOS5440_CPUFREQ
 	tristate "SAMSUNG EXYNOS5440"
 	depends on SOC_EXYNOS5440
@@ -39,6 +49,12 @@ config ARM_EXYNOS5440_CPUFREQ
 	  the common exynos framework.
 
 	  If in doubt, say N.
+
+config ARM_EXYNOS7420_CPUFREQ
+	def_bool SOC_EXYNOS7420
+	help
+	  This adds the CPUFreq driver for Samsung EXYNOS7420
+	  SoC.
 
 config ARM_HIGHBANK_CPUFREQ
 	tristate "Calxeda Highbank-based"

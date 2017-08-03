@@ -1,0 +1,22 @@
+#
+# LineageOS device-tree build-support
+#
+config DTB_EXYNOS7420_ZEROFLTE_EUR
+	bool "Build device-tree for SM-G920F/I"
+	depends on SOC_EXYNOS7420
+	def_bool n
+
+config DTB_EXYNOS7420_ZEROLTE_EUR
+	bool "Build device-tree for SM-G925F/I"
+	depends on SOC_EXYNOS7420
+	def_bool n
+
+config DTB_EXYNOS7420_ZEROFLTE_USA
+	bool "Build device-tree for SM-G920T/W8"
+	depends on SOC_EXYNOS7420
+	def_bool n
+
+config DTB_EXYNOS7420_ZEROLTE_USA
+	bool "Build device-tree for SM-G925T/W8"
+	depends on SOC_EXYNOS7420
+	def_bool n

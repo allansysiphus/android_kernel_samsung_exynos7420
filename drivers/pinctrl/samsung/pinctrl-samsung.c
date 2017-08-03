@@ -977,7 +977,7 @@ samsung_pinctrl_get_soc_data(struct samsung_pinctrl_drv_data *d,
 	struct device_node *node = pdev->dev.of_node;
 	struct device_node *np;
 	const struct samsung_pin_bank_data *bdata;
-	const struct samsung_pin_ctrl *ctrl;
+	struct samsung_pin_ctrl *ctrl;
 	struct samsung_pin_bank *bank;
 	int i;
 
@@ -1027,6 +1027,7 @@ samsung_pinctrl_get_soc_data(struct samsung_pinctrl_drv_data *d,
 		}
 	}
 
+	ctrl->base = pin_base;
 	d->pin_base = pin_base;
 	pin_base += d->nr_pins;
 
@@ -1242,6 +1243,8 @@ static const struct of_device_id samsung_pinctrl_dt_match[] = {
 		.data = (void *)s5pv210_pin_ctrl },
 	{ .compatible = "samsung,exynos7-pinctrl",
 		.data = (void *)exynos7_pin_ctrl },
+	{ .compatible = "samsung,exynos7420-pinctrl",
+		.data = (void *)exynos7420_pin_ctrl },
 #endif
 #ifdef CONFIG_PINCTRL_S3C64XX
 	{ .compatible = "samsung,s3c64xx-pinctrl",

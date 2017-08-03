@@ -62,6 +62,7 @@ struct clk {
 	struct clk_mapping	*mapping;
 	struct cpufreq_frequency_table *freq_table;
 	unsigned int		nr_freqs;
+	unsigned int        enable_count;
 };
 
 #define CLK_ENABLE_ON_INIT	BIT(0)

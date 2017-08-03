@@ -19,6 +19,7 @@
 #ifndef __ASM_SMP_PLAT_H
 #define __ASM_SMP_PLAT_H
 
+#include <linux/errno.h>
 #include <linux/cpumask.h>
 
 #include <asm/types.h>

@@ -20,7 +20,15 @@
 
 #include "clk.h"
 
+struct dummy_gate_clk {
+	unsigned long	offset;
+	u8		bit_idx;
+	struct clk	*clk;
+};
+
 static LIST_HEAD(clock_reg_cache_list);
+static struct dummy_gate_clk **gate_clk_list;
+static unsigned int gate_clk_nr;
 
 void samsung_clk_save(void __iomem *base,
 				    struct samsung_clk_reg_dump *rd,
@@ -261,17 +269,36 @@ void __init samsung_clk_register_gate(struct samsung_clk_provider *ctx,
 				unsigned int nr_clk)
 {
 	struct clk *clk;
+	struct dummy_gate_clk *dummy_clk;
 	unsigned int idx, ret;
+
+	gate_clk_list = kzalloc(sizeof(struct dummy_gate_clk *) * nr_clk, GFP_KERNEL);
+	if (!gate_clk_list) {
+		panic("%s: can not allocate for gate clock list\n", __func__);
+		return;
+	}
 
 	for (idx = 0; idx < nr_clk; idx++, list++) {
 		clk = clk_register_gate(NULL, list->name, list->parent_name,
 				list->flags, ctx->reg_base + list->offset,
 				list->bit_idx, list->gate_flags, &ctx->lock);
 		if (IS_ERR(clk)) {
-			pr_err("%s: failed to register clock %s\n", __func__,
+			panic("%s: failed to register clock %s\n", __func__,
 				list->name);
 			continue;
 		}
+
+		dummy_clk = kzalloc(sizeof(struct dummy_gate_clk), GFP_KERNEL);
+		if (!dummy_clk) {
+			panic("%s: fail to allocate for dummy_clk\n", __func__);
+			return;
+		}
+
+		dummy_clk->offset = list->offset;
+		dummy_clk->bit_idx = list->bit_idx;
+		dummy_clk->clk = clk;
+
+		gate_clk_list[idx] = dummy_clk;
 
 		/* register a clock lookup only if a clock alias is specified */
 		if (list->alias) {
@@ -284,6 +311,8 @@ void __init samsung_clk_register_gate(struct samsung_clk_provider *ctx,
 
 		samsung_clk_add_lookup(ctx, clk, list->id);
 	}
+	
+	gate_clk_nr = nr_clk;
 }
 
 /*
@@ -319,6 +348,21 @@ unsigned long _get_rate(const char *clk_name)
 	}
 
 	return clk_get_rate(clk);
+}
+
+struct clk *samsung_clk_get_by_reg(unsigned long offset, u8 bit_idx)
+{
+	unsigned int i;
+
+	for(i = 0; i < gate_clk_nr; i++) {
+		if (gate_clk_list[i]->offset == offset) {
+			if (gate_clk_list[i]->bit_idx == bit_idx)
+				return gate_clk_list[i]->clk;
+		}
+	}
+
+	pr_err("%s: Fail to get clk by register offset\n", __func__);
+	return 0;
 }
 
 #ifdef CONFIG_PM_SLEEP

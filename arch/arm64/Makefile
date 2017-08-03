@@ -85,11 +85,27 @@ KASAN_SHADOW_OFFSET := $(shell printf "0x%08x00000000\n" $$(( \
 
 export	TEXT_OFFSET GZFLAGS
 
+ifeq ($(CONFIG_ARCH_EXYNOS),y)
+mach-name	+= exynos
+plat-name	+= samsung
+endif
+
+ifneq ($(mach-name),)
+machdirs := $(patsubst %,arch/arm64/mach-%/,$(mach-name))
+KBUILD_CPPFLAGS += $(patsubst %, -I%include,$(machdirs))
+endif
+
+ifneq ($(plat-name),)
+platdirs := $(patsubst %,arch/arm64/plat-%/,$(plat-name))
+KBUILD_CPPFLAGS += $(patsubst %, -I%include,$(platdirs))
+endif
+
 core-y		+= arch/arm64/kernel/ arch/arm64/mm/
 core-$(CONFIG_NET) += arch/arm64/net/
 core-$(CONFIG_KVM) += arch/arm64/kvm/
 core-$(CONFIG_XEN) += arch/arm64/xen/
 core-$(CONFIG_CRYPTO) += arch/arm64/crypto/
+core-y		+= $(machdirs) $(platdirs)
 libs-y		:= arch/arm64/lib/ $(libs-y)
 core-$(CONFIG_EFI_STUB) += $(objtree)/drivers/firmware/efi/libstub/lib.a
 

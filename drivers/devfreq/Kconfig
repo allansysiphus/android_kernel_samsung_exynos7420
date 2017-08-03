@@ -39,6 +39,11 @@ config DEVFREQ_GOV_SIMPLE_ONDEMAND
 	  values that imply the usage rate. A device may provide tuned
 	  values to the governor with data field at devfreq_add_device().
 
+config DEVFREQ_GOV_SIMPLE_EXYNOS
+	tristate "Simple Exynos"
+	help
+	  Chooses frequency based on the threshold of target device.
+
 config DEVFREQ_GOV_PERFORMANCE
 	tristate "Performance"
 	help
@@ -111,6 +116,37 @@ config ARM_RK3399_DMC_DEVFREQ
           This adds the DEVFREQ driver for the RK3399 DMC(Dynamic Memory Controller).
           It sets the frequency for the memory controller and reads the usage counts
           from hardware.
+
+config ARM_EXYNOS7420_BUS_DEVFREQ
+	bool "ARM Exynos7420 Memory Bus DEVFREQ Driver"
+	default y
+	depends on SOC_EXYNOS7420
+	select ARCH_HAS_OPP
+	select PM_OPP
+	select DEVFREQ_GOV_SIMPLE_ONDEMAND
+	select DEVFREQ_GOV_SIMPLE_EXYNOS
+	help
+	  This adds the DEVFREQ driver for Exynos5 series memory and int.
+
+config ARM_EXYNOS7420_BUS_DEVFREQ_THERMAL_OFFSET
+	bool "Apply Dynamically DRAM Thermal offset -10"
+	default y
+	depends on ARM_EXYNOS7420_BUS_DEVFREQ
+
+config ARM_EXYNOS7420_BUS_DEVFREQ_ODT_OFF
+	bool "Apply DRAM DQ ODT OFF(below 632MHz)"
+	default n
+	depends on ARM_EXYNOS7420_BUS_DEVFREQ
+
+config ARM_EXYNOS7420_BUS_DEVFREQ_ADV_MIF_THERMAL_POLLING
+	bool "Apply advanced mif thermal polling period"
+	default n
+	depends on ARM_EXYNOS7420_BUS_DEVFREQ
+
+config ARM_EXYNOS7420_BUS_DEVFREQ_TDNR
+	bool "Updated INT clocks for TDNR(Three Dimension Noise Reduction)"
+	default n
+	depends on ARM_EXYNOS7420_BUS_DEVFREQ
 
 source "drivers/devfreq/event/Kconfig"
 

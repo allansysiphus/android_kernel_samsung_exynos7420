@@ -912,5 +912,10 @@ struct dentry *clk_debugfs_add_file(struct clk_hw *hw, char *name, umode_t mode,
 				void *data, const struct file_operations *fops);
 #endif
 
+/*
+ * samsung specific clk_get API which uses register address and bit field
+ */
+extern struct clk *samsung_clk_get_by_reg(unsigned long offset, u8 bit_idx);
+
 #endif /* CONFIG_COMMON_CLK */
 #endif /* CLK_PROVIDER_H */

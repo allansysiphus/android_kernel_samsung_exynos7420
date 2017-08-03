@@ -39,6 +39,8 @@
 #define STEP_12_5_MV		12500
 #define STEP_6_25_MV		6250
 
+#define SEC_PMIC_REV(iodev)	(iodev)->rev_num
+
 enum sec_device_type {
 	S5M8751X,
 	S5M8763X,
@@ -49,6 +51,7 @@ enum sec_device_type {
 	S2MPS14X,
 	S2MPS15X,
 	S2MPU02,
+	S2MPU03X
 };
 
 /**
@@ -67,20 +70,45 @@ enum sec_device_type {
 struct sec_pmic_dev {
 	struct device *dev;
 	struct sec_platform_data *pdata;
+	struct regmap *regmap;
 	struct regmap *regmap_pmic;
+	struct regmap *rtc_regmap;
 	struct i2c_client *i2c;
+	struct i2c_client *rtc;
+	struct mutex iolock;
 
 	unsigned long device_type;
+	int rev_num;
 	int irq_base;
 	int irq;
 	struct regmap_irq_chip_data *irq_data;
 
+	int ono;
+	int type;
 	bool wakeup;
+	bool adc_en;
 };
 
 int sec_irq_init(struct sec_pmic_dev *sec_pmic);
 void sec_irq_exit(struct sec_pmic_dev *sec_pmic);
 int sec_irq_resume(struct sec_pmic_dev *sec_pmic);
+
+/**
+ * struct sec_wtsr_smpl - settings for WTSR/SMPL
+ * @wtsr_en:		WTSR Function Enable Control
+ * @smpl_en:		SMPL Function Enable Control
+ * @wtsr_timer_val:	Set the WTSR timer Threshold
+ * @smpl_timer_val:	Set the SMPL timer Threshold
+ * @check_jigon:	if this value is true, do not enable SMPL function when
+ *			JIGONB is low(JIG cable is attached)
+ */
+struct sec_wtsr_smpl {
+	bool wtsr_en;
+	bool smpl_en;
+	int wtsr_timer_val;
+	int smpl_timer_val;
+	bool check_jigon;
+};
 
 struct sec_platform_data {
 	struct sec_regulator_data	*regulators;
@@ -91,6 +119,7 @@ struct sec_platform_data {
 	int				irq_base;
 	int				(*cfg_pmic_irq)(void);
 
+	int				ono;
 	bool				wakeup;
 	bool				buck_voltage_lock;
 
@@ -140,7 +169,37 @@ struct sec_platform_data {
 	bool				manual_poweroff;
 	/* Disable the WRSTBI (buck voltage warm reset) when probing? */
 	bool				disable_wrstbi;
+
+	int				smpl_warn;
+	int				g3d_pin;
+	int				dvs_pin;
+	bool				g3d_en;
+	bool				smpl_warn_en;
+	bool				dvs_en;
+	bool				buck_dvs_on;
+	bool				adc_en;
+
+	bool				ap_buck_avp_en;
+	bool				sub_buck_avp_en;
+	unsigned int                    smpl_warn_vth;
+	unsigned int                    smpl_warn_hys;
+
+	bool				ten_bit_address;
+
+	/* ---- RTC ---- */
+	struct sec_wtsr_smpl *wtsr_smpl;
+	struct rtc_time *init_time;
 };
+
+extern void s2m_init_dvs(void);
+extern int s2m_get_dvs_is_enable(void);
+
+extern int s2m_get_dvs_is_on(void);
+extern int s2m_set_dvs_pin(bool gpio_val);
+void g3d_pin_config_set(void);
+extern int sec_reg_read(struct sec_pmic_dev *sec_pmic, u32 reg, void *dest);
+extern int sec_reg_write(struct sec_pmic_dev *sec_pmic, u32 reg, u32 value);
+extern int sec_reg_update(struct sec_pmic_dev *sec_pmic, u32 reg, u32 val, u32 mask);
 
 /**
  * sec_regulator_data - regulator data

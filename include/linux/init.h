@@ -197,6 +197,11 @@ extern bool initcall_debug;
 #define __exitcall(fn)						\
 	static exitcall_t __exitcall_##fn __exit_call = fn
 
+/**
+ * Defined to support drivers ported from 3.10
+ */
+#define module_exit(x)	__exitcall(x);
+
 #define console_initcall(fn)					\
 	static initcall_t __initcall_##fn			\
 	__used __section(.con_initcall.init) = fn

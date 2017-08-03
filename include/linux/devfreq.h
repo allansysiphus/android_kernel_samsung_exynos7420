@@ -255,6 +255,13 @@ static inline int devfreq_update_stats(struct devfreq *df)
 	return df->profile->get_dev_status(df->dev.parent, &df->last_status);
 }
 
+#if IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_EXYNOS)
+struct devfreq_notifier_block {
+	struct notifier_block nb;
+	struct devfreq *df;
+};
+#endif
+
 #if IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND)
 /**
  * struct devfreq_simple_ondemand_data - void *data fed to struct devfreq
@@ -272,6 +279,25 @@ static inline int devfreq_update_stats(struct devfreq *df)
 struct devfreq_simple_ondemand_data {
 	unsigned int upthreshold;
 	unsigned int downdifferential;
+	int pm_qos_class;
+	int pm_qos_class_max;
+	unsigned long cal_qos_max;
+};
+#endif
+
+#if IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_EXYNOS)
+struct devfreq_simple_exynos_data {
+	unsigned int urgentthreshold;
+	unsigned int upthreshold;
+	unsigned int downthreshold;
+	unsigned int idlethreshold;
+	unsigned long above_freq;
+	unsigned long below_freq;
+	int pm_qos_class;
+	int pm_qos_class_max;
+	unsigned long cal_qos_max;
+	bool en_monitoring;
+	struct devfreq_notifier_block nb;
 };
 #endif
 

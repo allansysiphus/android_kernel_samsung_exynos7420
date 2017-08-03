@@ -5,7 +5,7 @@
 #include <linux/tick.h>
 
 #include "timekeeping.h"
-#include "tick-sched.h"
+#include <linux/tick-sched.h>
 
 #ifdef CONFIG_GENERIC_CLOCKEVENTS
 
