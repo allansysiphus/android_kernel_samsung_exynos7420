@@ -44,6 +44,17 @@ struct completion {
 #define DECLARE_COMPLETION(work) \
 	struct completion work = COMPLETION_INITIALIZER(work)
 
+/**
+ * INIT_COMPLETION - reinitialize a completion structure
+ * @x:  completion structure to be reinitialized
+ *
+ * This macro should be used to reinitialize a completion structure so it can
+ * be reused. This is especially important after complete_all() is used.
+ *
+ * Ported from 3.10-kernel
+ */
+#define INIT_COMPLETION(x)	((x).done = 0)
+
 /*
  * Lockdep needs to run a non-constant initializer for on-stack
  * completions - so we use the _ONSTACK() variant for those that
