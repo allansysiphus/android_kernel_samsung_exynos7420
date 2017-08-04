@@ -716,6 +716,12 @@ static inline void tracing_snapshot(void) { }
 static inline void tracing_snapshot_alloc(void) { }
 
 static inline __printf(1, 2)
+int trace_puts(const char *fmt, ...)
+{
+	return 0;
+}
+
+static inline __printf(1, 2)
 int trace_printk(const char *fmt, ...)
 {
 	return 0;

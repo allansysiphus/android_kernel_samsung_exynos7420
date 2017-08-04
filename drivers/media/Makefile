@@ -35,3 +35,6 @@ obj-y += rc/
 obj-y += common/ platform/ pci/ usb/ mmc/ firewire/ spi/
 obj-$(CONFIG_VIDEO_DEV) += radio/
 
+obj-$(CONFIG_MEDIA_M2M1SHOT) += m2m1shot.o m2m1shot-helper.o
+obj-$(CONFIG_MEDIA_M2M1SHOT_TESTDEV) += m2m1shot-testdev.o
+

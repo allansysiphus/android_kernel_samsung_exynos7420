@@ -214,6 +214,17 @@ static inline void get_dma_buf(struct dma_buf *dmabuf)
 	get_file(dmabuf->file);
 }
 
+/**
+ * get_dma_buf_file - Finds dma_buf from a file descriptor
+ *
+ * @filp: [in] file descriptor to extract dma_buf.
+ *
+ * Returns the pointer to dma_buf stored in @filp after incrementing count.
+ * The returned dma_buf must be released with dma_buf_put().
+ * Returns NULL if @filp is not the file descriptor of dma_buf.
+ */
+struct dma_buf *get_dma_buf_file(struct file *filp);
+
 struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
 							struct device *dev);
 void dma_buf_detach(struct dma_buf *dmabuf,

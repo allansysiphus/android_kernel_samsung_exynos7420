@@ -84,6 +84,7 @@ struct iommu_domain {
 	void *handler_token;
 	struct iommu_domain_geometry geometry;
 	void *iova_cookie;
+	void *priv;
 };
 
 enum iommu_cap {
@@ -162,6 +163,9 @@ struct iommu_dm_region {
  */
 struct iommu_ops {
 	bool (*capable)(enum iommu_cap);
+
+	int (*domain_init)(struct iommu_domain *domain);
+	void (*domain_destroy)(struct iommu_domain *domain);
 
 	/* Domain allocation and freeing by the iommu driver */
 	struct iommu_domain *(*domain_alloc)(unsigned iommu_domain_type);

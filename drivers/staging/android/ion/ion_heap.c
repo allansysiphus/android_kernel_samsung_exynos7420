@@ -22,6 +22,7 @@
 #include <linux/sched.h>
 #include <linux/scatterlist.h>
 #include <linux/vmalloc.h>
+#include <linux/highmem.h>
 #include "ion.h"
 #include "ion_priv.h"
 
@@ -56,7 +57,7 @@ void *ion_heap_map_kernel(struct ion_heap *heap,
 	vaddr = vmap(pages, npages, VM_MAP, pgprot);
 	vfree(pages);
 
-	if (!vaddr)
+	if (vaddr == NULL)
 		return ERR_PTR(-ENOMEM);
 
 	return vaddr;
@@ -93,7 +94,7 @@ int ion_heap_map_user(struct ion_heap *heap, struct ion_buffer *buffer,
 		}
 		len = min(len, remainder);
 		ret = remap_pfn_range(vma, addr, page_to_pfn(page), len,
-				      vma->vm_page_prot);
+				vma->vm_page_prot);
 		if (ret)
 			return ret;
 		addr += len;
@@ -142,13 +143,20 @@ int ion_heap_buffer_zero(struct ion_buffer *buffer)
 {
 	struct sg_table *table = buffer->sg_table;
 	pgprot_t pgprot;
+	int ret;
+
+	ION_EVENT_BEGIN();
 
 	if (buffer->flags & ION_FLAG_CACHED)
 		pgprot = PAGE_KERNEL;
 	else
 		pgprot = pgprot_writecombine(PAGE_KERNEL);
 
-	return ion_heap_sglist_zero(table->sgl, table->nents, pgprot);
+	ret = ion_heap_sglist_zero(table->sgl, table->nents, pgprot);
+
+	ION_EVENT_CLEAR(buffer, ION_EVENT_DONE());
+
+	return ret;
 }
 
 int ion_heap_pages_zero(struct page *page, size_t size, pgprot_t pgprot)
@@ -181,7 +189,7 @@ size_t ion_heap_freelist_size(struct ion_heap *heap)
 }
 
 static size_t _ion_heap_freelist_drain(struct ion_heap *heap, size_t size,
-				       bool skip_pools)
+				bool skip_pools)
 {
 	struct ion_buffer *buffer;
 	size_t total_drained = 0;
@@ -253,13 +261,16 @@ int ion_heap_init_deferred_free(struct ion_heap *heap)
 	struct sched_param param = { .sched_priority = 0 };
 
 	INIT_LIST_HEAD(&heap->free_list);
+	heap->free_list_size = 0;
+	spin_lock_init(&heap->free_lock);
 	init_waitqueue_head(&heap->waitqueue);
 	heap->task = kthread_run(ion_heap_deferred_free, heap,
 				 "%s", heap->name);
+	sched_setscheduler(heap->task, SCHED_IDLE, &param);
 	if (IS_ERR(heap->task)) {
 		pr_err("%s: creating thread for deferred free failed\n",
 		       __func__);
-		return PTR_ERR_OR_ZERO(heap->task);
+		return PTR_RET(heap->task);
 	}
 	sched_setscheduler(heap->task, SCHED_IDLE, &param);
 	return 0;
@@ -321,8 +332,9 @@ struct ion_heap *ion_heap_create(struct ion_platform_heap *heap_data)
 
 	switch (heap_data->type) {
 	case ION_HEAP_TYPE_SYSTEM_CONTIG:
-		heap = ion_system_contig_heap_create(heap_data);
-		break;
+		pr_err("%s: Heap type is disabled: %d\n", __func__,
+			heap_data->type);
+		return ERR_PTR(-EINVAL);
 	case ION_HEAP_TYPE_SYSTEM:
 		heap = ion_system_heap_create(heap_data);
 		break;
@@ -352,7 +364,6 @@ struct ion_heap *ion_heap_create(struct ion_platform_heap *heap_data)
 	heap->id = heap_data->id;
 	return heap;
 }
-EXPORT_SYMBOL(ion_heap_create);
 
 void ion_heap_destroy(struct ion_heap *heap)
 {
@@ -361,7 +372,8 @@ void ion_heap_destroy(struct ion_heap *heap)
 
 	switch (heap->type) {
 	case ION_HEAP_TYPE_SYSTEM_CONTIG:
-		ion_system_contig_heap_destroy(heap);
+		pr_err("%s: Heap type is disabled: %d\n", __func__,
+			heap->type);
 		break;
 	case ION_HEAP_TYPE_SYSTEM:
 		ion_system_heap_destroy(heap);
@@ -380,4 +392,3 @@ void ion_heap_destroy(struct ion_heap *heap)
 		       heap->type);
 	}
 }
-EXPORT_SYMBOL(ion_heap_destroy);

@@ -92,27 +92,8 @@ void decon_to_psr_info(struct decon_device *decon, struct decon_psr_info *psr)
 void decon_to_init_param(struct decon_device *decon, struct decon_init_param *p)
 {
 	struct decon_lcd *lcd_info = decon->lcd_info;
-	struct v4l2_mbus_framefmt mbus_fmt;
-	int ret = 0;
 
-	mbus_fmt.width = 0;
-	mbus_fmt.height = 0;
-	mbus_fmt.code = 0;
-	mbus_fmt.field = 0;
-	mbus_fmt.colorspace = 0;
-
-	if (decon->out_type == DECON_OUT_HDMI) {
-		ret = v4l2_subdev_call(decon->output_sd, video, g_mbus_fmt,
-								&mbus_fmt);
-		if (ret)
-			decon_warn("failed to get mbus_fmt for hdmi\n");
-		p->lcd_info = find_porch(mbus_fmt);
-		decon_info("find porch %dx%d@%dHz\n", p->lcd_info->xres,
-				p->lcd_info->yres, p->lcd_info->fps);
-	} else {
-		p->lcd_info = lcd_info;
-	}
-	decon->lcd_info = p->lcd_info;
+	p->lcd_info = lcd_info;
 	p->psr.psr_mode = decon->pdata->psr_mode;
 	p->psr.trig_mode = decon->pdata->trig_mode;
 	p->psr.out_type = decon->out_type;

@@ -329,7 +329,7 @@ static int exynos_pm_enter(suspend_state_t state)
 	/* This will also act as our return point when
 	 * we resume as it saves its own register state and restores it
 	 * during the resume. */
-	ret = cpu_suspend(PSCI_INDEX_SLEEP, __pa(cpu_resume));
+	ret = cpu_suspend(PSCI_INDEX_SLEEP, NULL);
 	if (ret) {
 		pr_info("%s: return to originator\n", __func__);
 		return ret;

@@ -938,8 +938,8 @@ static int vpp_create_subdev(struct vpp_dev *vpp)
 	sd->flags = V4L2_SUBDEV_FL_HAS_DEVNODE;
 	snprintf(sd->name, sizeof(sd->name), "%s.%d", "vpp-sd", vpp->id);
 	sd->grp_id = vpp->id;
-	ret = media_entity_init(&sd->entity, VPP_PADS_NUM,
-				&vpp->pad, 0);
+	ret = media_entity_pads_init(&sd->entity, VPP_PADS_NUM,
+				&vpp->pad);
 	if (ret) {
 		dev_err(DEV, "Failed to initialize VPP media entity");
 		goto error;
@@ -1201,7 +1201,7 @@ static int vpp_probe(struct platform_device *pdev)
 	vpp->pdev = pdev;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	vpp->regs = devm_request_and_ioremap(dev, res);
+	vpp->regs = devm_ioremap_resource(dev, res);
 	if (!vpp->regs) {
 		dev_err(DEV, "Failed to map registers\n");
 		ret = -EADDRNOTAVAIL;

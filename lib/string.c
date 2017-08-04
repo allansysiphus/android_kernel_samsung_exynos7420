@@ -360,6 +360,38 @@ int strncmp(const char *cs, const char *ct, size_t count)
 EXPORT_SYMBOL(strncmp);
 #endif
 
+#ifndef __HAVE_ARCH_STRNICMP
+/**
+ * strnicmp - Case insensitive, length-limited string comparison
+ * @s1: One string
+ * @s2: The other string
+ * @len: the maximum number of characters to compare
+ */
+int strnicmp(const char *s1, const char *s2, size_t len)
+{
+	/* Yes, Virginia, it had better be unsigned */
+	unsigned char c1, c2;
+
+	if (!len)
+		return 0;
+
+	do {
+		c1 = *s1++;
+		c2 = *s2++;
+		if (!c1 || !c2)
+			break;
+		if (c1 == c2)
+			continue;
+		c1 = tolower(c1);
+		c2 = tolower(c2);
+		if (c1 != c2)
+			break;
+	} while (--len);
+	return (int)c1 - (int)c2;
+}
+EXPORT_SYMBOL(strnicmp);
+#endif
+
 #ifndef __HAVE_ARCH_STRCHR
 /**
  * strchr - Find the first occurrence of a character in a string

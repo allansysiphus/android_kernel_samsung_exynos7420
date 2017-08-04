@@ -1062,20 +1062,36 @@ static struct iommu_domain *__iommu_domain_alloc(struct bus_type *bus,
 						 unsigned type)
 {
 	struct iommu_domain *domain;
+	int ret;
 
 	if (bus == NULL || bus->iommu_ops == NULL)
 		return NULL;
 
-	domain = bus->iommu_ops->domain_alloc(type);
-	if (!domain)
-		return NULL;
+	/* Support 3.10 driver ports by simulating exact behaviour */
+	if (bus->iommu_ops->domain_alloc != NULL) {
+		domain = bus->iommu_ops->domain_alloc(type);
+		if (!domain)
+			return NULL;
 
-	domain->ops  = bus->iommu_ops;
-	domain->type = type;
-	/* Assume all sizes by default; the driver may override this later */
-	domain->pgsize_bitmap  = bus->iommu_ops->pgsize_bitmap;
+		domain->ops  = bus->iommu_ops;
+		domain->type = type;
+		/* Assume all sizes by default; the driver may override this later */
+		domain->pgsize_bitmap  = bus->iommu_ops->pgsize_bitmap;
+	} else {
+		domain = kzalloc(sizeof(*domain), GFP_KERNEL);
+		if (!domain)
+			return NULL;
+
+		ret = domain->ops->domain_init(domain);
+		if (ret)
+			goto out_free;
+	}
 
 	return domain;
+
+out_free:
+	kfree(domain);
+	return NULL;
 }
 
 struct iommu_domain *iommu_domain_alloc(struct bus_type *bus)
@@ -1086,7 +1102,14 @@ EXPORT_SYMBOL_GPL(iommu_domain_alloc);
 
 void iommu_domain_free(struct iommu_domain *domain)
 {
-	domain->ops->domain_free(domain);
+	/* Support 3.10 driver ports by simulating exact behaviour */
+	if (domain->ops->domain_free != NULL) {
+		domain->ops->domain_free(domain);
+	} else {
+		if (domain->ops->domain_destroy != NULL)
+			domain->ops->domain_destroy(domain);
+		kfree(domain);
+	}
 }
 EXPORT_SYMBOL_GPL(iommu_domain_free);
 

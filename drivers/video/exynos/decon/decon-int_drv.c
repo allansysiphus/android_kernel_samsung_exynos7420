@@ -387,7 +387,7 @@ int create_link_mipi(struct decon_device *decon)
 
 	flags = MEDIA_LNK_FL_ENABLED;
 	for (i = decon->n_sink_pad; i < n_pad ; i++) {
-		ret = media_entity_create_link(&decon->sd.entity, i,
+		ret = media_create_pad_link(&decon->sd.entity, i,
 				&md->dsim_sd[decon->id]->entity, 0, flags);
 		if (ret) {
 			snprintf(err, sizeof(err), "%s --> %s",

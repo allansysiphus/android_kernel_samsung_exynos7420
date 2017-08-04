@@ -250,27 +250,63 @@ config TEGRA_IOMMU_SMMU
 	  This driver supports the IOMMU hardware (SMMU) found on NVIDIA Tegra
 	  SoCs (Tegra30 up to Tegra210).
 
-config EXYNOS_IOMMU
+config EXYNOS_IOMMU_V6
 	bool "Exynos IOMMU Support"
-	depends on ARCH_EXYNOS && MMU
+	depends on ARCH_EXYNOS && (SOC_EXYNOS7420 || SOC_EXYNOS7580)
 	select IOMMU_API
-	select ARM_DMA_USE_IOMMU
 	help
-	  Support for the IOMMU (System MMU) of Samsung Exynos application
-	  processor family. This enables H/W multimedia accelerators to see
-	  non-linear physical memory chunks as linear memory in their
-	  address space.
+	  Support for the IOMMU(System MMU) of Samsung Exynos application
+	  processor family. This enables H/W multimedia accellerators to see
+	  non-linear physical memory chunks as a linear memory in their
+	  address spaces
 
 	  If unsure, say N here.
 
+config EXYNOS_IOMMU_NO_MASTER_CLKGATE
+	bool "Always enable master's clock when System MMU is enabled"
+	depends on EXYNOS_IOMMU || EXYNOS7_IOMMU || EXYNOS_IOMMU_V6
+	default y
+	help
+	  Exynos IOMMU driver gates master's clock when access to the MMIO of
+	  System MMU is required. However, if the master's device driver does
+	  not handle the master's gate clocks, Exynos IOMMU driver may disable
+	  the master's clock.
+	  Say Y if Exynos IOMMU driver always enable the master's gate clock
+	  if System MMU is enabled to guarantee that the master's clock is not
+	  gated by System MMU driver.
+
+config EXYNOS_IOMMU_EVENT_LOG
+	bool "Logging System MMU events in private uncached buffer"
+	depends on EXYNOS_IOMMU || EXYNOS_IOMMU_V6
+	default y
+
 config EXYNOS_IOMMU_DEBUG
 	bool "Debugging log for Exynos IOMMU"
-	depends on EXYNOS_IOMMU
+	depends on EXYNOS_IOMMU || EXYNOS_IOMMU_V6
 	help
 	  Select this to see the detailed log message that shows what
-	  happens in the IOMMU driver.
+	  happens in the IOMMU driver
 
-	  Say N unless you need kernel log message for IOMMU debugging.
+	  Say N unless you need kernel log message for IOMMU debugging
+
+config EXYNOS7_IOMMU_CHECK_DF
+	bool "Check direct fetch capability"
+	depends on EXYNOS7_IOMMU || EXYNOS_IOMMU_V6
+	default y
+	help
+	  Support for Direct fetch functionality. This allows to check
+	  direct fetch capability before setting special slots.
+
+config EXYNOS_IOVMM_V6
+	bool "IO Virtual Memory Manager for Exynos IOMMU V6"
+	select GENERIC_ALLOCATOR
+	depends on EXYNOS_IOMMU_V6
+	default y
+	help
+	  Supporting the users of Exynos IOMMU for allocating and mapping
+	  an IO virtual memory region with a physical memory region
+	  and managing the allocated virtual memory regions.
+	  This config supports SYSMMU V6 version.
 
 config IPMMU_VMSA
 	bool "Renesas VMSA-compatible IPMMU"

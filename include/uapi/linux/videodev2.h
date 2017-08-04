@@ -65,6 +65,10 @@
 #include <linux/v4l2-common.h>
 #include <linux/v4l2-controls.h>
 
+#if defined(CONFIG_EXYNOS_VIDEO)
+#include "videodev2_exynos_media.h"
+#endif
+
 /*
  * Common stuff for both V4L1 and V4L2
  * Moved from videodev.h
@@ -488,7 +492,11 @@ struct v4l2_pix_format {
 #define V4L2_PIX_FMT_ABGR32  v4l2_fourcc('A', 'R', '2', '4') /* 32  BGRA-8-8-8-8  */
 #define V4L2_PIX_FMT_XBGR32  v4l2_fourcc('X', 'R', '2', '4') /* 32  BGRX-8-8-8-8  */
 #define V4L2_PIX_FMT_RGB32   v4l2_fourcc('R', 'G', 'B', '4') /* 32  RGB-8-8-8-8   */
+
+#if !defined(CONFIG_EXYNOS_VIDEO)
 #define V4L2_PIX_FMT_ARGB32  v4l2_fourcc('B', 'A', '2', '4') /* 32  ARGB-8-8-8-8  */
+#endif
+
 #define V4L2_PIX_FMT_XRGB32  v4l2_fourcc('B', 'X', '2', '4') /* 32  XRGB-8-8-8-8  */
 
 /* Grey formats */

@@ -400,7 +400,7 @@ static int exynos_mipi_dsi_probe(struct platform_device *pdev)
 	}
 
 	dsim->irq = platform_get_irq(pdev, 0);
-	if (IS_ERR_VALUE(dsim->irq)) {
+	if (IS_ERR_VALUE((unsigned long)dsim->irq)) {
 		dev_err(&pdev->dev, "failed to request dsim irq resource\n");
 		ret = -EINVAL;
 		goto error;

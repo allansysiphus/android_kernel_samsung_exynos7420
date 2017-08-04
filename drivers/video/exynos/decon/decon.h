@@ -39,6 +39,8 @@
 #include "./panels/decon_lcd.h"
 #include "dsim.h"
 
+#include "../../../staging/android/sw_sync.h"
+
 #if defined(CONFIG_EXYNOS_DECON_MDNIE)
 #include "./panels/mdnie.h"
 #endif
@@ -341,6 +343,7 @@ struct exynos_hdmi_data {
 		EXYNOS_HDMI_STATE_AUDIO,
 	} state;
 	struct	v4l2_dv_timings timings;
+	struct	v4l2_dv_timings_cap timings_cap;
 	struct	v4l2_enum_dv_timings etimings;
 	__u32	cec_addr;
 	__u32	audio_info;

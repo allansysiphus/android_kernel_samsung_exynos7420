@@ -1796,7 +1796,7 @@ static int dsim_register_entity(struct dsim_device *dsim)
 	dev_set_drvdata(dev, sd);
 	pads[DSIM_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
 	me->ops = &dsim_entity_ops;
-	ret = media_entity_init(me, DSIM_PADS_NUM, pads, 0);
+	ret = media_entity_pads_init(me, DSIM_PADS_NUM, pads);
 	if (ret) {
 		dev_err(dev, "failed to initialize media entity\n");
 		return ret;
@@ -1978,7 +1978,7 @@ static int dsim_probe(struct platform_device *pdev)
 	}
 
 	dsim_info("res: start(0x%x), end(0x%x)\n", (u32)res->start, (u32)res->end);
-	dsim->reg_base = devm_request_and_ioremap(dev, res);
+	dsim->reg_base = devm_ioremap_resource(dev, res);
 	if (!dsim->reg_base) {
 		dev_err(&pdev->dev, "mipi-dsi: failed to remap io region\n");
 		ret = -EINVAL;

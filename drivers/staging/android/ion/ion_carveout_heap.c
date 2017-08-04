@@ -33,7 +33,7 @@ struct ion_carveout_heap {
 	ion_phys_addr_t base;
 };
 
-static ion_phys_addr_t ion_carveout_allocate(struct ion_heap *heap,
+ion_phys_addr_t ion_carveout_allocate(struct ion_heap *heap,
 					     unsigned long size,
 					     unsigned long align)
 {
@@ -47,7 +47,7 @@ static ion_phys_addr_t ion_carveout_allocate(struct ion_heap *heap,
 	return offset;
 }
 
-static void ion_carveout_free(struct ion_heap *heap, ion_phys_addr_t addr,
+void ion_carveout_free(struct ion_heap *heap, ion_phys_addr_t addr,
 			      unsigned long size)
 {
 	struct ion_carveout_heap *carveout_heap =

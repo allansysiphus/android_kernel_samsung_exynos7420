@@ -553,7 +553,7 @@ static int exynos_get_trend(struct thermal_zone_device *thermal,
 	return 0;
 }
 
-static int __ref exynos_throttle_cpu_hotplug(struct thermal_zone_device *thermal)
+/* static int __ref exynos_throttle_cpu_hotplug(struct thermal_zone_device *thermal)
 {
 	int ret = 0;
 	int cur_temp = 0;
@@ -568,10 +568,10 @@ static int __ref exynos_throttle_cpu_hotplug(struct thermal_zone_device *thermal
 
 	if (is_cpu_hotplugged_out) {
 		if (cur_temp < pdata->hotplug_in_threshold) {
-			/*
+			/-*
 			 * If current temperature is lower than low threshold,
 			 * call cluster1_cores_hotplug(false) for hotplugged out cpus.
-			 */
+			 *-/
 			ret = cluster1_cores_hotplug(false);
 			if (ret) {
 				pr_err("%s: failed cluster1 cores hotplug in\n",
@@ -583,10 +583,10 @@ static int __ref exynos_throttle_cpu_hotplug(struct thermal_zone_device *thermal
 		}
 	} else {
 		if (cur_temp >= pdata->hotplug_out_threshold) {
-			/*
+			/-*
 			 * If current temperature is higher than high threshold,
 			 * call cluster1_cores_hotplug(true) to hold temperature down.
-			 */
+			 *-/
 			ret = cluster1_cores_hotplug(true);
 			if (ret)
 				pr_err("%s: failed cluster1 cores hotplug out\n",
@@ -597,7 +597,7 @@ static int __ref exynos_throttle_cpu_hotplug(struct thermal_zone_device *thermal
 	}
 
 	return ret;
-}
+} */
 
 /* Operation callback functions for thermal zone */
 static struct thermal_zone_device_ops exynos_dev_ops = {

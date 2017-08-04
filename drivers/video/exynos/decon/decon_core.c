@@ -1296,7 +1296,7 @@ int decon_tui_protection(struct decon_device *decon, bool tui_en)
 		/* Blocking LPD */
 		decon_lpd_block_exit(decon);
 		mutex_lock(&decon->output_lock);
-		flush_kthread_worker(&decon->update_regs_worker);
+		kthread_flush_worker(&decon->update_regs_worker);
 
 		/* disable all the windows */
 		for (i = 0; i < decon->pdata->max_win; i++)
@@ -1687,7 +1687,7 @@ int decon_disable(struct decon_device *decon)
 		goto err;
 	}
 
-	flush_kthread_worker(&decon->update_regs_worker);
+	kthread_flush_worker(&decon->update_regs_worker);
 
 	decon_reg_set_int(decon->id, &psr, DSI_MODE_SINGLE, 0);
 
@@ -4232,7 +4232,7 @@ static int decon_set_win_config(struct decon_device *decon,
 		dsim = container_of(decon->output_sd, struct dsim_device, sd);
 #endif
 
-	fd = get_unused_fd();
+	fd = get_unused_fd_flags(0);
 	if (fd < 0)
 		return fd;
 
@@ -4474,7 +4474,7 @@ windows_config:
 		list_add_tail(&regs->list, &decon->update_regs_list);
 		decon->update_regs_list_cnt++;
 		mutex_unlock(&decon->update_regs_list_lock);
-		queue_kthread_work(&decon->update_regs_worker,
+		kthread_queue_work(&decon->update_regs_worker,
 				&decon->update_regs_work);
 	}
 err:
@@ -4623,7 +4623,7 @@ int decon_doze_suspend(struct decon_device *decon)
 		ret = -EEXIST;
 		goto err;
 	}
-	flush_kthread_worker(&decon->update_regs_worker);
+	kthread_flush_worker(&decon->update_regs_worker);
 
 	decon_to_psr_info(decon, &psr);
 	decon_reg_set_int(decon->id, &psr, decon->pdata->dsi_mode, 0);
@@ -5085,7 +5085,7 @@ static int decon_s_stream(struct v4l2_subdev *sd, int enable)
 	return 0;
 }
 
-static int decon_s_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
+static int decon_s_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_pad_config *cfg,
 		       struct v4l2_subdev_format *format)
 {
 	struct decon_device *decon = container_of(sd, struct decon_device, sd);
@@ -5194,7 +5194,7 @@ static int decon_create_links(struct decon_device *decon,
 #ifdef CONFIG_EXYNOS_VPP
 	for (i = 0; i < MAX_VPP_SUBDEV; ++i) {
 		for (j = 0; j < decon->n_sink_pad; j++) {
-			ret = media_entity_create_link(&md->vpp_sd[i]->entity,
+			ret = media_create_pad_link(&md->vpp_sd[i]->entity,
 					VPP_PAD_SOURCE, &decon->sd.entity,
 					j, flags);
 			if (ret) {
@@ -5252,7 +5252,7 @@ static int decon_register_entity(struct decon_device *decon)
 		pads[i].flags = MEDIA_PAD_FL_SOURCE;
 
 	me->ops = &decon_entity_ops;
-	ret = media_entity_init(me, n_pad, pads, 0);
+	ret = media_entity_pads_init(me, n_pad, pads);
 	if (ret) {
 		decon_err("failed to initialize media entity\n");
 		return ret;
@@ -5296,11 +5296,13 @@ static int decon_fb_alloc_memory(struct decon_device *decon, struct decon_win *w
 	struct decon_fb_pd_win *windata = &win->windata;
 	unsigned int real_size, virt_size, size;
 	struct fb_info *fbi = win->fbinfo;
-	struct ion_handle *handle;
 	dma_addr_t map_dma;
+#if defined(CONFIG_ION_EXYNOS)
+	struct ion_handle *handle;
 	struct dma_buf *buf;
 	void *vaddr;
 	unsigned int ret;
+#endif
 
 	dev_info(decon->dev, "allocating memory for display\n");
 
@@ -5589,7 +5591,7 @@ static int decon_esd_panel_reset(struct decon_device *decon)
 	if (decon->pdata->psr_mode == DECON_MIPI_COMMAND_MODE)
 		decon->ignore_vsync = true;
 
-	flush_kthread_worker(&decon->update_regs_worker);
+	kthread_flush_worker(&decon->update_regs_worker);
 
 	/* stop output device (mipi-dsi or hdmi) */
 	ret = v4l2_subdev_call(decon->output_sd, video, s_stream, 0);
@@ -5986,7 +5988,7 @@ static int decon_probe(struct platform_device *pdev)
 
 	/* Get memory resource and map SFR region. */
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	decon->regs = devm_request_and_ioremap(dev, res);
+	decon->regs = devm_ioremap_resource(dev, res);
 	if (decon->regs == NULL) {
 		decon_err("failed to claim register region\n");
 		goto fail_kfree;
@@ -6118,7 +6120,7 @@ static int decon_probe(struct platform_device *pdev)
 	mutex_init(&decon->update_regs_list_lock);
 	decon->update_regs_list_cnt = 0;
 	SYSTRACE_C_MARK( "update_regs_list", decon->update_regs_list_cnt);
-	init_kthread_worker(&decon->update_regs_worker);
+	kthread_init_worker(&decon->update_regs_worker);
 
 	decon->update_regs_thread = kthread_run(kthread_worker_fn,
 			&decon->update_regs_worker, device_name);
@@ -6128,7 +6130,7 @@ static int decon_probe(struct platform_device *pdev)
 		decon_err("failed to run update_regs thread\n");
 		goto fail_output_lock;
 	}
-	init_kthread_work(&decon->update_regs_work, decon_update_regs_handler);
+	kthread_init_work(&decon->update_regs_work, decon_update_regs_handler);
 
 	snprintf(device_name, MAX_NAME_SIZE, "decon%d-wb", decon->id);
 	decon->wb_timeline = sw_sync_timeline_create(device_name);

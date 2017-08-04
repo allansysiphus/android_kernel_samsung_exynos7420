@@ -19,6 +19,9 @@
 #include <linux/clk-provider.h>
 #include <mach/regs-clock.h>
 
+#include <media/v4l2-ctrls.h>
+#include <media/v4l2-dv-timings.h>
+
 #include "decon.h"
 #include "decon_helper.h"
 
@@ -159,7 +162,7 @@ int create_link_hdmi(struct decon_device *decon)
 	if (!strcmp(decon->output_sd->name, "s5p-hdmi-sd"))
 		flags = MEDIA_LNK_FL_ENABLED;
 	for (i = decon->n_sink_pad; i < n_pad ; i++) {
-		ret = media_entity_create_link(&decon->sd.entity, i,
+		ret = media_create_pad_link(&decon->sd.entity, i,
 				&decon->output_sd->entity, 0, flags);
 		if (ret) {
 			snprintf(err, sizeof(err), "%s --> %s",
@@ -239,13 +242,20 @@ int decon_get_hdmi_config(struct decon_device *decon,
 			hdmi_data->timings.type);
 		break;
 	case EXYNOS_HDMI_STATE_ENUM_PRESET:
-		ret = v4l2_subdev_call(decon->output_sd, video, enum_dv_timings, &hdmi_data->etimings);
+		ret = v4l2_subdev_call(decon->output_sd, pad, dv_timings_cap, &hdmi_data->timings_cap);
+		if (ret)
+			decon_err("failed to enumerate timings-cap\n");
+		ret = v4l2_enum_dv_timings_cap(&hdmi_data->etimings, &hdmi_data->timings_cap, NULL, NULL);
 		if (ret)
 			decon_err("failed to enumerate timings\n");
 		break;
 	case EXYNOS_HDMI_STATE_CEC_ADDR:
+		if (decon->output_sd->ctrl_handler == NULL) {
+			ret = -EINVAL;
+			break;
+		}
 		ctrl.id = V4L2_CID_TV_SOURCE_PHY_ADDR;
-		ret = v4l2_subdev_call(decon->output_sd, core, g_ctrl, &ctrl);
+		ret = v4l2_g_ctrl(decon->output_sd->ctrl_handler, &ctrl);
 		if (ret)
 			decon_err("failed to get physical address for CEC\n");
 		hdmi_data->cec_addr = ctrl.value;
@@ -253,8 +263,12 @@ int decon_get_hdmi_config(struct decon_device *decon,
 					hdmi_data->cec_addr);
 		break;
 	case EXYNOS_HDMI_STATE_AUDIO:
+		if (decon->output_sd->ctrl_handler == NULL) {
+			ret = -EINVAL;
+			break;
+		}
 		ctrl.id = V4L2_CID_TV_MAX_AUDIO_CHANNELS;
-		ret = v4l2_subdev_call(decon->output_sd, core, g_ctrl, &ctrl);
+		ret = v4l2_g_ctrl(decon->output_sd->ctrl_handler, &ctrl);
 		if (ret)
 			decon_err("failed to get hdmi audio information\n");
 		hdmi_data->audio_info = ctrl.value;
@@ -293,7 +307,7 @@ int decon_set_hdmi_config(struct decon_device *decon,
 	case EXYNOS_HDMI_STATE_HDCP:
 		ctrl.id = V4L2_CID_TV_HDCP_ENABLE;
 		ctrl.value = hdmi_data->hdcp;
-		ret = v4l2_subdev_call(decon->output_sd, core, s_ctrl, &ctrl);
+		ret = v4l2_ctrl_s_ctrl(decon->output_sd->ctrl_handler->cached->ctrl, ctrl.value);
 		if (ret)
 			decon_err("failed to enable HDCP\n");
 		decon_dbg("HDCP %s\n", ctrl.value ? "enabled" : "disabled");
@@ -301,7 +315,7 @@ int decon_set_hdmi_config(struct decon_device *decon,
 	case EXYNOS_HDMI_STATE_AUDIO:
 		ctrl.id = V4L2_CID_TV_SET_NUM_CHANNELS;
 		ctrl.value = hdmi_data->audio_info;
-		ret = v4l2_subdev_call(decon->output_sd, core, s_ctrl, &ctrl);
+		ret = v4l2_ctrl_s_ctrl(decon->output_sd->ctrl_handler->cached->ctrl, ctrl.value);
 		if (ret)
 			decon_err("failed to set hdmi audio information\n");
 		break;

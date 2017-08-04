@@ -299,8 +299,10 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else if [ -x /bin/bash ]; then echo /bin/bash; \
 	  else echo sh; fi ; fi)
 
-HOSTCC       = gcc
-HOSTCXX      = g++
+CCACHE  = $(srctree)/../../../prebuilts/misc/linux-x86/ccache/ccache
+
+HOSTCC       = $(CCACHE) gcc
+HOSTCXX      = $(CCACHE) g++
 HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
 HOSTCXXFLAGS = -O2
 
@@ -346,7 +348,7 @@ include scripts/Kbuild.include
 # Make variables (CC, etc...)
 AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld
-CC		= $(CROSS_COMPILE)gcc
+CC		= $(CCACHE) $(CROSS_COMPILE)gcc
 CPP		= $(CC) -E
 AR		= $(CROSS_COMPILE)ar
 NM		= $(CROSS_COMPILE)nm
@@ -395,12 +397,19 @@ LINUXINCLUDE	+= $(filter-out $(LINUXINCLUDE),$(USERINCLUDE))
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
-		   -fno-strict-aliasing -fno-common \
-		   -Werror-implicit-function-declaration \
-		   -Wno-format-security \
-		   -std=gnu89 $(call cc-option,-fno-PIE)
-
+KBUILD_CFLAGS   := \
+			-Wall \
+			-Wundef \
+			-Wstrict-prototypes \
+			-Wno-trigraphs \
+			-Werror \
+			-fno-strict-aliasing \
+			-fno-common \
+			-Werror-implicit-function-declaration \
+			-Wno-format-security \
+			-std=gnu89 \
+			-march=armv8-a+crc \
+			-mtune=cortex-a57.cortex-a53 \
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=

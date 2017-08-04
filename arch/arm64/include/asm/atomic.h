@@ -22,6 +22,7 @@
 
 #include <linux/compiler.h>
 #include <linux/types.h>
+#include <linux/irqflags.h>
 
 #include <asm/barrier.h>
 #include <asm/lse.h>
@@ -127,6 +128,31 @@
 #define atomic_add_negative(i, v)	(atomic_add_return((i), (v)) < 0)
 #define __atomic_add_unless(v, a, u)	___atomic_add_unless(v, a, u,)
 #define atomic_andnot			atomic_andnot
+
+/*
+ * Samsung's atomic operations ported from 3.10
+ */
+static inline void atomic_push(atomic_t *v, int value, int width)
+{
+	unsigned long flags;
+
+	raw_local_irq_save(flags);
+	v->counter = (v->counter << width) | (value & ((1 << width) - 1));
+	raw_local_irq_restore(flags);
+}
+
+static inline int atomic_pop(atomic_t *v, int width)
+{
+	int result;
+	unsigned long flags;
+
+	raw_local_irq_save(flags);
+	result = v->counter;
+	v->counter >>= width;
+	raw_local_irq_restore(flags);
+
+	return result & ((1 << width) - 1);
+}
 
 /*
  * 64-bit atomic operations.
