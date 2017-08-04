@@ -592,6 +592,10 @@ extern struct cpufreq_governor cpufreq_gov_sched;
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_sched)
 #endif
 
+#ifdef CONFIG_CPU_FREQ_GOV_INTERACTIVE
+unsigned int cpufreq_interactive_get_hispeed_freq(int cpu);
+#endif
+
 /*********************************************************************
  *                     FREQUENCY TABLE HELPERS                       *
  *********************************************************************/

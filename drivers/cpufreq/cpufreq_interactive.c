@@ -1151,6 +1151,20 @@ static void interactive_tunables_free(struct interactive_tunables *tunables)
 	kfree(tunables);
 }
 
+unsigned int cpufreq_interactive_get_hispeed_freq(int cpu)
+{
+	struct interactive_cpu *icpu = &per_cpu(interactive_cpu, cpu);
+	struct interactive_tunables *tunables;
+
+	if (icpu && icpu->ipolicy && icpu->ipolicy->tunables)
+		tunables = icpu->ipolicy->tunables;
+	else
+		return 0;
+
+	return tunables->hispeed_freq;
+}
+EXPORT_SYMBOL(cpufreq_interactive_get_hispeed_freq);
+
 int cpufreq_interactive_init(struct cpufreq_policy *policy)
 {
 	struct interactive_policy *ipolicy;
