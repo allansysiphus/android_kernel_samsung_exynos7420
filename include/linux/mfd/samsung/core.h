@@ -14,30 +14,7 @@
 #ifndef __LINUX_MFD_SEC_CORE_H
 #define __LINUX_MFD_SEC_CORE_H
 
-/* Macros to represent minimum voltages for LDO/BUCK */
-#define MIN_3000_MV		3000000
-#define MIN_2500_MV		2500000
-#define MIN_2000_MV		2000000
-#define MIN_1800_MV		1800000
-#define MIN_1500_MV		1500000
-#define MIN_1400_MV		1400000
-#define MIN_1000_MV		1000000
-
-#define MIN_900_MV		900000
-#define MIN_850_MV		850000
-#define MIN_800_MV		800000
-#define MIN_750_MV		750000
-#define MIN_600_MV		600000
-#define MIN_500_MV		500000
-
-/* Ramp delay in uV/us */
-#define RAMP_DELAY_12_MVUS	12000
-
-/* Macros to represent steps for LDO/BUCK */
-#define STEP_50_MV		50000
-#define STEP_25_MV		25000
-#define STEP_12_5_MV		12500
-#define STEP_6_25_MV		6250
+#define NUM_IRQ_REGS	4
 
 #define SEC_PMIC_REV(iodev)	(iodev)->rev_num
 
@@ -45,53 +22,52 @@ enum sec_device_type {
 	S5M8751X,
 	S5M8763X,
 	S5M8767X,
-	S2MPA01,
 	S2MPS11X,
 	S2MPS13X,
-	S2MPS14X,
 	S2MPS15X,
-	S2MPU02,
-	S2MPU03X
+	S2MPU03X,
 };
 
 /**
- * struct sec_pmic_dev - s2m/s5m master device for sub-drivers
- * @dev:		Master device of the chip
- * @pdata:		Platform data populated with data from DTS
- *			or board files
- * @regmap_pmic:	Regmap associated with PMIC's I2C address
- * @i2c:		I2C client of the main driver
- * @device_type:	Type of device, matches enum sec_device_type
- * @irq_base:		Base IRQ number for device, required for IRQs
- * @irq:		Generic IRQ number for device
- * @irq_data:		Runtime data structure for IRQ controller
- * @wakeup:		Whether or not this is a wakeup device
+ * struct sec_pmic_dev - s5m87xx master device for sub-drivers
+ * @dev: master device of the chip (can be used to access platform data)
+ * @pdata: pointer to private data used to pass platform data to child
+ * @i2c: i2c client private data for regulator
+ * @rtc: i2c client private data for rtc
+ * @iolock: mutex for serializing io access
+ * @irqlock: mutex for buslock
+ * @irq_base: base IRQ number for sec-pmic, required for IRQs
+ * @irq: generic IRQ number for s5m87xx
+ * @ono: power onoff IRQ number for s5m87xx
+ * @irq_masks_cur: currently active value
+ * @irq_masks_cache: cached hardware value
+ * @type: indicate which s5m87xx "variant" is used
  */
 struct sec_pmic_dev {
 	struct device *dev;
 	struct sec_platform_data *pdata;
 	struct regmap *regmap;
-	struct regmap *regmap_pmic;
 	struct regmap *rtc_regmap;
 	struct i2c_client *i2c;
 	struct i2c_client *rtc;
+	struct mutex sec_lock;
 	struct mutex iolock;
+	struct mutex irqlock;
+	struct apm_ops *ops;
 
-	unsigned long device_type;
+	int device_type;
 	int rev_num;
 	int irq_base;
 	int irq;
 	struct regmap_irq_chip_data *irq_data;
 
 	int ono;
+	u8 irq_masks_cur[NUM_IRQ_REGS];
+	u8 irq_masks_cache[NUM_IRQ_REGS];
 	int type;
 	bool wakeup;
 	bool adc_en;
 };
-
-int sec_irq_init(struct sec_pmic_dev *sec_pmic);
-void sec_irq_exit(struct sec_pmic_dev *sec_pmic);
-int sec_irq_resume(struct sec_pmic_dev *sec_pmic);
 
 /**
  * struct sec_wtsr_smpl - settings for WTSR/SMPL
@@ -143,32 +119,30 @@ struct sec_platform_data {
 	int				buck3_default_idx;
 	int				buck4_default_idx;
 
-	int				buck_ramp_delay;
+	int                             buck_ramp_delay;
 
 	int				buck2_ramp_delay;
+	int				buck3_ramp_delay;
+	int				buck4_ramp_delay;
+	int				buck6_ramp_delay;
+	int				buck710_ramp_delay;
+	int				buck89_ramp_delay;
+	int				buck15_ramp_delay;
 	int				buck34_ramp_delay;
 	int				buck5_ramp_delay;
 	int				buck16_ramp_delay;
 	int				buck7810_ramp_delay;
 	int				buck9_ramp_delay;
-	int				buck24_ramp_delay;
-	int				buck3_ramp_delay;
-	int				buck7_ramp_delay;
-	int				buck8910_ramp_delay;
+	int				bb1_ramp_delay;
 
-	bool				buck1_ramp_enable;
-	bool				buck2_ramp_enable;
-	bool				buck3_ramp_enable;
-	bool				buck4_ramp_enable;
+	bool                            buck2_ramp_enable;
+	bool                            buck3_ramp_enable;
+	bool                            buck4_ramp_enable;
 	bool				buck6_ramp_enable;
 
 	int				buck2_init;
 	int				buck3_init;
 	int				buck4_init;
-	/* Whether or not manually set PWRHOLD to low during shutdown. */
-	bool				manual_poweroff;
-	/* Disable the WRSTBI (buck voltage warm reset) when probing? */
-	bool				disable_wrstbi;
 
 	int				smpl_warn;
 	int				g3d_pin;
@@ -191,15 +165,33 @@ struct sec_platform_data {
 	struct rtc_time *init_time;
 };
 
+int sec_irq_init(struct sec_pmic_dev *sec_pmic);
+void sec_irq_exit(struct sec_pmic_dev *sec_pmic);
+int sec_irq_resume(struct sec_pmic_dev *sec_pmic);
+
+extern int sec_reg_read(struct sec_pmic_dev *sec_pmic, u32 reg, void *dest);
+extern int sec_bulk_read(struct sec_pmic_dev *sec_pmic, u32 reg, int count, u8 *buf);
+extern int sec_reg_write(struct sec_pmic_dev *sec_pmic, u32 reg, u32 value);
+extern int sec_bulk_write(struct sec_pmic_dev *sec_pmic, u32 reg, int count, u8 *buf);
+extern int sec_reg_update(struct sec_pmic_dev *sec_pmic, u32 reg, u32 val, u32 mask);
+
+
+extern int sec_rtc_read(struct sec_pmic_dev *sec_pmic, u32 reg, void *dest);
+extern int sec_rtc_bulk_read(struct sec_pmic_dev *sec_pmic, u32 reg, int count,
+				u8 *buf);
+extern int sec_rtc_write(struct sec_pmic_dev *sec_pmic, u32 reg, u32 value);
+extern int sec_rtc_bulk_write(struct sec_pmic_dev *sec_pmic, u32 reg, int count,
+				u8 *buf);
+extern int sec_rtc_update(struct sec_pmic_dev *sec_pmic, u32 reg, u32 val,
+				u32 mask);
 extern void s2m_init_dvs(void);
 extern int s2m_get_dvs_is_enable(void);
-
 extern int s2m_get_dvs_is_on(void);
 extern int s2m_set_dvs_pin(bool gpio_val);
+extern int s2m_set_g3d_pin(bool gpio_val);
+extern void sec_core_lock(void);
+extern void sec_core_unlock(void);
 void g3d_pin_config_set(void);
-extern int sec_reg_read(struct sec_pmic_dev *sec_pmic, u32 reg, void *dest);
-extern int sec_reg_write(struct sec_pmic_dev *sec_pmic, u32 reg, u32 value);
-extern int sec_reg_update(struct sec_pmic_dev *sec_pmic, u32 reg, u32 val, u32 mask);
 
 /**
  * sec_regulator_data - regulator data
@@ -209,8 +201,7 @@ extern int sec_reg_update(struct sec_pmic_dev *sec_pmic, u32 reg, u32 val, u32 m
 struct sec_regulator_data {
 	int				id;
 	struct regulator_init_data	*initdata;
-	struct device_node		*reg_node;
-	int				ext_control_gpio;
+	struct device_node *reg_node;
 };
 
 /*
@@ -235,9 +226,9 @@ struct sec_opmode_data {
 
 enum sec_opmode {
 	SEC_OPMODE_OFF,
-	SEC_OPMODE_ON,
-	SEC_OPMODE_LOWPOWER,
 	SEC_OPMODE_SUSPEND,
+	SEC_OPMODE_LOWPOWER,
+	SEC_OPMODE_ON,
 };
 
 #endif /*  __LINUX_MFD_SEC_CORE_H */

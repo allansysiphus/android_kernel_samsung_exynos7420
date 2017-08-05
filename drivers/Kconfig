@@ -202,4 +202,11 @@ source "drivers/hwtracing/intel_th/Kconfig"
 
 source "drivers/fpga/Kconfig"
 
+#
+# Samsung drivers
+#
+source "drivers/battery/Kconfig"
+source "drivers/muic/Kconfig"
+source "drivers/switch/Kconfig"
+
 endmenu

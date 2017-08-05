@@ -60,8 +60,13 @@
 #define ARIZONA_MAX_DAI  10
 #define ARIZONA_MAX_ADSP 4
 
-#define ARIZONA_DVFS_SR1_RQ	0x001
-#define ARIZONA_DVFS_ADSP1_RQ	0x100
+#ifndef ARIZONA_DVFS_SR1_RQ
+#define ARIZONA_DVFS_SR1_RQ	0x00000001
+#endif
+
+#ifndef ARIZONA_DVFS_ADSP1_RQ
+#define ARIZONA_DVFS_ADSP1_RQ	0x00010000
+#endif
 
 /* Notifier events */
 #define ARIZONA_NOTIFY_VOICE_TRIGGER   0x1
@@ -297,8 +302,8 @@ struct arizona_fll {
 	char clock_ok_name[ARIZONA_FLL_NAME_LEN];
 };
 
-extern int arizona_dvfs_up(struct snd_soc_codec *codec, unsigned int flags);
-extern int arizona_dvfs_down(struct snd_soc_codec *codec, unsigned int flags);
+// extern int arizona_dvfs_up(struct snd_soc_codec *codec, unsigned int flags);
+// extern int arizona_dvfs_down(struct snd_soc_codec *codec, unsigned int flags);
 extern int arizona_dvfs_sysclk_ev(struct snd_soc_dapm_widget *w,
 				  struct snd_kcontrol *kcontrol, int event);
 extern void arizona_init_dvfs(struct arizona_priv *priv);

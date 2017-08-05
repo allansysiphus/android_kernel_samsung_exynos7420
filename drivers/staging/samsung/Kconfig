@@ -1,0 +1,47 @@
+# drivers/staging/samsung/Kconfig
+#
+# Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
+#		http://www.samsung.com/
+#
+# Licensed under GPLv2
+
+comment "Samsung TN Features"
+config SEC_EXT
+	bool "Samsung TN extension Feature"
+	default y
+
+config SEC_SYSFS
+	bool "Samsung sec sysfs Feature"
+	default y
+	depends on SEC_EXT
+	help
+	  Samsung sysfs name 'sec' directory create.
+
+config SEC_REBOOT
+	bool "Samsung TM reboot extension Feature"
+	default y
+	depends on SEC_EXT
+	help
+	  Samsung TN reboot extension feature. Do additional work when reboot.
+
+config SEC_MISC
+        bool "Samsung TM Misc Feature"
+        default n
+        help
+          Samsung TN Misc extension Feature. Do additional work when Misc.
+
+config SEC_DEBUG
+	bool "Enable TN debugging feature"
+	depends on EXYNOS_SNAPSHOT
+	depends on SEC_REBOOT
+	default y
+	help
+	  Samsung TN debugging feature.
+
+comment "PARAM Feature"
+config SEC_PARAM
+	bool "Samsung TN Param Feature"
+	default n
+	depends on SEC_DEBUG
+	help
+	  Samsung TN Param Feature.

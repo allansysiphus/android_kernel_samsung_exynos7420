@@ -813,7 +813,7 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
 				  &sec_pmic->irq_data);
 		break;
 	default:
-		dev_err(sec_pmic->dev, "Unknown device type %lu\n",
+		dev_err(sec_pmic->dev, "Unknown device type %d\n",
 			sec_pmic->device_type);
 		return -EINVAL;
 	}
