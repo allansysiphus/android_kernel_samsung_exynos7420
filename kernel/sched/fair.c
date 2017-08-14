@@ -125,6 +125,8 @@ unsigned int __read_mostly sysctl_sched_shares_window = 10000000UL;
 unsigned int sysctl_sched_cfs_bandwidth_slice = 5000UL;
 #endif
 
+struct static_key __sched_energy_freq __read_mostly = STATIC_KEY_INIT_FALSE;
+
 /*
  * Increase the granularity value when there are more CPUs,
  * because with more CPUs the 'effective latency' as visible
@@ -3047,6 +3049,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 {
 	struct cfs_rq *cfs_rq;
 	struct sched_entity *se = &p->se;
+	int task_wakeup = flags & ENQUEUE_WAKEUP;
 
 	for_each_sched_entity(se) {
 		if (se->on_rq)
@@ -3081,6 +3084,10 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 	if (!se) {
 		update_rq_runnable_avg(rq, rq->nr_running);
 		inc_nr_running(rq);
+
+		if (sched_energy_freq() && task_wakeup) {
+			__cpufreq_sched_notify(cpu_of(rq));
+		}
 	}
 	hrtick_update(rq);
 }
@@ -3142,6 +3149,10 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 	if (!se) {
 		dec_nr_running(rq);
 		update_rq_runnable_avg(rq, 1);
+
+		if (sched_energy_freq() && task_sleep) {
+			__cpufreq_sched_notify(cpu_of(rq));
+		}
 	}
 	hrtick_update(rq);
 }
@@ -6227,6 +6238,18 @@ more_balance:
 		 * ld_moved     - cumulative load moved across iterations
 		 */
 		cur_ld_moved = move_tasks(&env);
+
+		/*
+		 * We want to potentially update env.src_cpu's OPP.
+		 *
+		 * Add a margin (same ~20% used for the tipping point)
+		 * to our request to provide some head room for the remaining
+		 * tasks.
+		 */
+		if (sched_energy_freq() && cur_ld_moved) {
+			__cpufreq_sched_notify(env.src_cpu);
+		}
+
 		ld_moved += cur_ld_moved;
 		double_rq_unlock(env.dst_rq, busiest);
 		local_irq_restore(flags);
@@ -6234,8 +6257,10 @@ more_balance:
 		/*
 		 * some other cpu did the load balance for us.
 		 */
-		if (cur_ld_moved && env.dst_cpu != smp_processor_id())
+		if (cur_ld_moved && env.dst_cpu != smp_processor_id()) {
 			resched_cpu(env.dst_cpu);
+			__cpufreq_sched_notify(env.dst_cpu);
+		}
 
 		if (env.flags & LBF_NEED_BREAK) {
 			env.flags &= ~LBF_NEED_BREAK;
@@ -6495,6 +6520,17 @@ static int active_load_balance_cpu_stop(void *data)
 
 		schedstat_inc(sd, alb_count);
 
+		/*
+		 * We want to potentially update env.src_cpu's OPP.
+		 *
+		 * Add a margin (same ~20% used for the tipping point)
+		 * to our request to provide some head room for the
+		 * remaining task.
+		 */
+		if (sched_energy_freq()) {
+			__cpufreq_sched_notify(env.src_cpu);
+		}
+
 		if (move_one_task(&env))
 			schedstat_inc(sd, alb_pushed);
 		else
@@ -6505,6 +6541,18 @@ static int active_load_balance_cpu_stop(void *data)
 out_unlock:
 	busiest_rq->active_balance = 0;
 	raw_spin_unlock_irq(&busiest_rq->lock);
+
+	/*
+	 * We want to potentially update target_cpu's OPP.
+	 *
+	 * Add a margin (same ~20% used for the tipping point)
+	 * to our request to provide some head room if p's utilization
+	 * further increases.
+	 */
+	if (sched_energy_freq()) {
+			__cpufreq_sched_notify(target_cpu);
+	}
+
 	return 0;
 }
 
@@ -7506,6 +7554,10 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
 		task_tick_numa(rq, curr);
 
 	update_rq_runnable_avg(rq, 1);
+
+	if (sched_energy_freq()) {
+		__cpufreq_sched_notify(cpu_of(rq));
+	}
 }
 
 /*

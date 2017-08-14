@@ -1057,6 +1057,25 @@ static inline void idle_balance(int cpu, struct rq *rq)
 
 #endif
 
+extern struct static_key __sched_energy_freq;
+static inline bool sched_energy_freq(void)
+{
+	return static_key_false(&__sched_energy_freq);
+}
+
+/*
+ * CPUFreq Sched Notifier
+ */
+#ifdef CONFIG_CPU_FREQ_GOV_NEXUS
+void cpufreq_nexus_sched_notify(int cpu);
+#endif
+
+static inline void __cpufreq_sched_notify(int cpu) {
+#ifdef CONFIG_CPU_FREQ_GOV_NEXUS
+	cpufreq_nexus_sched_notify(cpu);
+#endif
+}
+
 extern void sysrq_sched_debug_show(void);
 extern void sched_init_granularity(void);
 extern void update_max_interval(void);
