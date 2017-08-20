@@ -28,6 +28,9 @@ extern int strcmp(const char *, const char *);
 #define __HAVE_ARCH_STRNCMP
 extern int strncmp(const char *, const char *, __kernel_size_t);
 
+#define __HAVE_ARCH_STRCPY
+extern char * strcpy(char *,const char *);
+
 #define __HAVE_ARCH_STRLEN
 extern __kernel_size_t strlen(const char *);
 
